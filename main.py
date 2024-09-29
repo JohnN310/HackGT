@@ -6,6 +6,7 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 
+import comtypes.client
 import sys
 
 
@@ -36,8 +37,68 @@ def select_folder():
         print("No folder selected")
         return None
 
+def select_pptx_file():
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+
+    # Open the folder selection dialog
+    file_path = filedialog.askopenfilename(title="Select a PowerPoint File", filetypes=[("PowerPoint files", "*.pptx")])
+
+    if file_path:  # If a file was selected
+        print(f"Selected file: {file_path}")
+        return file_path
+    else:
+        print("No file selected")
+        return None
+
+def open_ppt(ppt_file):
+    # Check if the file exists
+    if not os.path.exists(ppt_file):
+        print(f"File does not exist: {ppt_file}")
+        return None
+    import traceback
+    try:
+        # Initialize COM
+        powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
+        powerpoint.Visible = True
+
+        # Open the presentation
+        presentation = powerpoint.Presentations.Open(ppt_file)
+        return presentation
+    except Exception as e:
+        print(f"Error opening presentation file '{ppt_file}': {e}")
+        print(traceback.format_exc())
+        return None
+    finally:
+        powerpoint.Quit()
+
+def convert_ppt_to_images(ppt_file, output_folder):
+    """""
+    Convert each slide in a PowerPoint file (.pptx) into a PNG image using PowerPoint automation.
+
+    :param ppt_file: The path to the PowerPoint file
+    :param output_folder: The folder where images will be stored
+    :return: The path to the folder containing the slide images
+    """
+    presentation = open_ppt(ppt_file)
+    # Loop through each slide and export it as an image
+    for i, slide in enumerate(presentation.Slides):
+        slide_image_path = os.path.join(output_folder, f"{i + 1}.png")
+        # Export slide as an image
+        slide.Export(slide_image_path, "PNG", 1280, 720)
+        print(f"Slide {i + 1} saved as {slide_image_path}")
+    # Close the presentation and PowerPoint
+    presentation.Close()
+    return output_folder
+
 # Call the function
-folderPath = select_folder()
+ppt_file = select_pptx_file()
+if ppt_file is None:
+    exit()
+
+#Replace this absolute directory of output_images with your local directory
+output_folder = "D:\Code\HackGT\output_images"
+folderPath = convert_ppt_to_images(ppt_file, output_folder)
 
 # folderPath = "C://Users//anhkh//OneDrive//GitHub//GesturePresentation//Hand-Gesture-Controlled-Presentation//Presentation"
 
